@@ -134,9 +134,9 @@
   .info-card-sub{ font-size:13.5px; color:var(--ink-soft); margin:0; }
 
   .break-card{ text-align:center; padding:44px 32px; }
-  .break-icon{ margin:8px auto 20px; }
+  .break-icon{ margin:8px auto 18px; }
   .break-icon img{ margin:0 auto; }
-  .break-tip{ font-size:17px; line-height:1.6; color:var(--ink); max-width:400px; margin:0 auto 28px; font-family:'Fraunces',serif; }
+  .break-note{ font-size:18px; line-height:1.6; color:var(--ink); max-width:400px; margin:0 auto 30px; font-family:'Fraunces',serif; }
   .break-card .start-btn{ display:inline-block; padding:14px 30px; }
   .instruction{ font-size:14.5px; line-height:1.6; color:var(--ink-soft); font-style:italic; margin:0 0 26px; max-width:520px; }
   .instruction strong{ font-style:normal; color:var(--ink); }
@@ -329,11 +329,13 @@ const QBANK = [
 const ORDER = [3,4,6,5, 0,1,2,12, 7,8,9,10, 11,13,14,15, 16,17,18,19];
 const questions = ORDER.map(i => QBANK[i]);
 
+// Each break follows a specific question (Q4: clarity on exposure, Q8: everyday choices & health,
+// Q12: home audit feeling, Q16: current choices as a mom), so the note responds to that theme.
 const breakTips = [
-  "You're doing better than you think. Most moms never stop to ask these questions at all.",
-  "Small, honest answers are more useful than perfect ones. Keep going.",
-  "Almost there. Notice how much you already know about your own home.",
-  "One last stretch. Your result is shaping up."
+  "Not knowing everything yet doesn't mean you're behind. It means you're starting to look, and that's the real shift.",
+  "You clearly already sense that the small stuff matters. That instinct is worth trusting.",
+  "Feeling unsure about an audit today doesn't mean you're doing badly. Most moms have never actually done one.",
+  "However you answered that one, showing up here already says a lot about the mom you are."
 ];
 
 const outcomes = {
@@ -367,7 +369,7 @@ function archetypeIcon(type, size){
   return `<img src="${ICONS[type]}" width="${size}" height="${size}" style="display:block;border-radius:50%;" alt="${type} icon">`;
 }
 
-let started=false, current=0, score=0, atGate=false, email='', name='', atBreak=false, breakIndex=0;
+let started=false, current=0, score=0, atGate=false, email='', name='', whatsapp='', atBreak=false, breakIndex=0;
 const root=document.getElementById('root');
 const SUBMIT_URL = 'https://formspree.io/f/maqrzkyv';
 
@@ -420,6 +422,7 @@ function renderGate(){
       <div class="gate-form">
         <input type="text" id="name-input" placeholder="Your name" autocomplete="name">
         <input type="email" id="email-input" placeholder="you@example.com" autocomplete="email">
+        <input type="tel" id="whatsapp-input" placeholder="WhatsApp number" autocomplete="tel">
         <p class="error-msg" id="email-error"></p>
         <button id="reveal-btn">Reveal my result</button>
       </div>
@@ -428,13 +431,16 @@ function renderGate(){
   `;
   const nameInput = document.getElementById('name-input');
   const input = document.getElementById('email-input');
+  const whatsappInput = document.getElementById('whatsapp-input');
   const err = document.getElementById('email-error');
   const btn = document.getElementById('reveal-btn');
 
   btn.onclick = () => {
     const nameVal = nameInput.value.trim();
     const val = input.value.trim();
+    const whatsappVal = whatsappInput.value.trim();
     const validEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val);
+    const validWhatsapp = /^[\d+\s-]{7,15}$/.test(whatsappVal);
 
     if(!nameVal){
       err.textContent = 'Enter your name to see your result.';
@@ -446,9 +452,15 @@ function renderGate(){
       input.style.borderColor = '#B5544A';
       return;
     }
+    if(!validWhatsapp){
+      err.textContent = 'Enter a valid WhatsApp number to see your result.';
+      whatsappInput.style.borderColor = '#B5544A';
+      return;
+    }
 
     name = nameVal;
     email = val;
+    whatsapp = whatsappVal;
     err.textContent = '';
     btn.disabled = true;
     btn.textContent = 'Sending your result...';
@@ -461,7 +473,7 @@ function renderGate(){
         'Content-Type': 'application/json',
         'Accept': 'application/json'
       },
-      body: JSON.stringify({ name: name, email: email, result: outcome.name })
+      body: JSON.stringify({ name: name, email: email, whatsapp: whatsapp, result: outcome.name })
     })
     .then(() => {
       atGate = false;
@@ -477,6 +489,7 @@ function renderGate(){
   const handleEnter = (e) => { if(e.key === 'Enter') btn.click(); };
   nameInput.addEventListener('keydown', handleEnter);
   input.addEventListener('keydown', handleEnter);
+  whatsappInput.addEventListener('keydown', handleEnter);
 }
 
 function renderResult(){
@@ -602,7 +615,7 @@ function render(){
 }
 
 function renderBreak(){
-  const tip = breakTips[breakIndex % breakTips.length];
+  const note = breakTips[breakIndex % breakTips.length];
   breakIndex++;
   const pct = Math.round((current/questions.length)*100);
   root.innerHTML=`
@@ -611,7 +624,7 @@ function renderBreak(){
         <div class="progress-track"><div class="progress-fill" style="width:${pct}%;"></div></div>
       </div>
       <div class="break-icon">${archetypeIcon('lotus',44)}</div>
-      <p class="break-tip">${tip}</p>
+      <p class="break-note">${note}</p>
       <button class="start-btn" id="break-continue">Continue &rarr;</button>
     </div>`;
   document.getElementById('break-continue').onclick = () => { atBreak=false; render(); };
