@@ -475,11 +475,18 @@ function renderGate(){
       },
       body: JSON.stringify({ name: name, email: email, whatsapp: whatsapp, result: outcome.name })
     })
-    .then(() => {
+    .then(async (res) => {
+      if(!res.ok){
+        const body = await res.text().catch(() => '');
+        console.error('Formspree submission failed:', res.status, body);
+      } else {
+        console.log('Formspree submission succeeded.');
+      }
       atGate = false;
       renderResult();
     })
-    .catch(() => {
+    .catch((e) => {
+      console.error('Formspree network error:', e);
       // Even if the network call fails, don't block the person from seeing their result.
       atGate = false;
       renderResult();
